@@ -14,11 +14,20 @@ async fn test_basics_on(contract_wasm: &[u8]) -> Result<(), Box<dyn std::error::
 
     let user_account = sandbox.dev_create_account().await?;
 
+    let outcome_initalize = user_account
+        .call(contract.id(), "new")
+        .args_json(json!({"initial_greeting": "Hello"}))
+        .transact()
+        .await
+        .unwrap();
+    assert!(outcome_initalize.is_success());
+
     let outcome = user_account
         .call(contract.id(), "set_greeting")
         .args_json(json!({"greeting": "Hello World!"}))
         .transact()
-        .await?;
+        .await
+        .unwrap();
     assert!(outcome.is_success());
 
     let user_message_outcome = contract.view("get_greeting").args_json(json!({})).await?;
@@ -26,5 +35,3 @@ async fn test_basics_on(contract_wasm: &[u8]) -> Result<(), Box<dyn std::error::
 
     Ok(())
 }
-
-

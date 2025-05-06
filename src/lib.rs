@@ -1,24 +1,24 @@
 // Find all our documentation at https://docs.near.org
-use near_sdk::{log, near};
+use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
+use near_sdk::{log, near_bindgen, PanicOnDefault};
 
 // Define the contract structure
-#[near(contract_state)]
-pub struct Contract {
+#[near_bindgen]
+#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
+pub struct NearTutorialContract {
     greeting: String,
 }
 
-// Define the default, which automatically initializes the contract
-impl Default for Contract {
-    fn default() -> Self {
+// Implement the contract structure
+#[near_bindgen]
+impl NearTutorialContract {
+    #[init]
+    pub fn new(initial_greeting: String) -> Self {
         Self {
-            greeting: "Hello".to_string(),
+            greeting: initial_greeting,
         }
     }
-}
 
-// Implement the contract structure
-#[near]
-impl Contract {
     // Public method - returns the greeting saved, defaulting to DEFAULT_GREETING
     pub fn get_greeting(&self) -> String {
         self.greeting.clone()
@@ -37,18 +37,26 @@ impl Contract {
  */
 #[cfg(test)]
 mod tests {
+    use near_sdk::test_utils::VMContextBuilder;
+
     use super::*;
+
+    fn setup_contract() -> (VMContextBuilder, NearTutorialContract) {
+        let context = VMContextBuilder::new();
+        let contract = NearTutorialContract::new("Hello".to_string());
+        (context, contract)
+    }
 
     #[test]
     fn get_default_greeting() {
-        let contract = Contract::default();
+        let (_, contract) = setup_contract();
         // this test did not call set_greeting so should return the default "Hello" greeting
         assert_eq!(contract.get_greeting(), "Hello");
     }
 
     #[test]
     fn set_then_get_greeting() {
-        let mut contract = Contract::default();
+        let (_, mut contract) = setup_contract();
         contract.set_greeting("howdy".to_string());
         assert_eq!(contract.get_greeting(), "howdy");
     }
