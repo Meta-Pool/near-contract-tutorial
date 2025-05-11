@@ -1,4 +1,7 @@
 [toolchain]
-channel = "1.80.1"
+# For deploy
+channel = "1.81.0"
+# For develop and test
+# channel = "stable"
 components = ["rustfmt"]
 targets = ["wasm32-unknown-unknown"]
