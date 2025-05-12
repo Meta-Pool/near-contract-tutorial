@@ -60,6 +60,9 @@ try_deploy_and_test() {
     echo "El saludo sigue siendo correcto"
 
     test_types
+
+    ./scripts/log/log.sh $ACCOUNT_ID
+
 }
 
 catch() {

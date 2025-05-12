@@ -2,14 +2,29 @@
 use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{log, near_bindgen, PanicOnDefault};
+use near_sdk::{log, near, near_bindgen, require, PanicOnDefault};
 use schemars::JsonSchema;
+use uint::construct_uint;
+
+construct_uint! {
+    /// 256-bit unsigned integer.
+    pub struct U256(4);
+}
 
 #[derive(Deserialize, Serialize, JsonSchema)]
 #[serde(crate = "near_sdk::serde")]
 pub struct BasicReturnObject {
     pub greeting: String,
     pub number: u8,
+}
+#[near(serializers = [json, borsh])]
+pub struct TokenData {
+    pub amount: U128,
+    pub decimals: u8,
+}
+
+pub(crate) fn proportional(amount: u128, numerator: u128, denominator: u128) -> u128 {
+    (U256::from(amount) * U256::from(numerator) / U256::from(denominator)).as_u128()
 }
 
 // Define the contract structure
@@ -88,6 +103,33 @@ impl NearTutorialContract {
     pub fn return_option_some(&self) -> Option<u8> {
         // this will return a Some value
         Some(42)
+    }
+
+    pub fn bad_divide(&self, a: u8, b: u8) -> u8 {
+        // this function should have imprecitions
+        require!(b != 0, "Division by zero");
+        a / b
+    }
+
+    pub fn divide_token(&self, a: TokenData, b: TokenData) -> TokenData {
+        // this may fail due to returning a json with a U128 value
+        require!(b.amount.0 != 0, "Division by zero");
+        let res = proportional(a.amount.0, 10_u128.pow(b.decimals as u32), b.amount.0);
+        TokenData {
+            amount: U128(res),
+            decimals: a.decimals,
+        }
+    }
+
+    pub fn percent(&self, a: U128, b: u16) -> U128 {
+        // this may fail due to returning a json with a U128 value
+        require!(b != 0, "Division by zero");
+        require!(b <= 10000, "Percentage too high");
+        U128(proportional(a.0, b as u128, 10000))
+    }
+
+    pub fn log(&self) {
+        log!("Greeting: {}", self.greeting);
     }
 }
 
@@ -194,5 +236,83 @@ mod tests {
         // this test did not call set_greeting so should return the default "Hello" greeting
         let vec = contract.return_option_some();
         assert_eq!(vec.unwrap(), 42);
+    }
+
+    #[test]
+    fn test_bad_divide() {
+        let (_, contract) = setup_contract();
+        let res = contract.bad_divide(5, 2);
+        assert_eq!(res, 2);
+    }
+
+    #[test]
+    fn test_divide_token_same_decimals() {
+        let (_, contract) = setup_contract();
+        let res = contract.divide_token(
+            TokenData {
+                amount: U128(5_000_000_000_000_000_000_000_000),
+                decimals: 24,
+            },
+            TokenData {
+                amount: U128(2_000_000_000_000_000_000_000_000),
+                decimals: 24,
+            },
+        );
+        let expected_res = TokenData {
+            amount: U128(2_500_000_000_000_000_000_000_000),
+            decimals: 24,
+        };
+        assert_eq!(res.amount, expected_res.amount);
+        assert_eq!(res.decimals, 24);
+    }
+
+    #[test]
+    fn test_divide_token_different_decimals_bigger() {
+        let (_, contract) = setup_contract();
+        let res = contract.divide_token(
+            TokenData {
+                amount: U128(5_000_000_000_000_000_000_000_000),
+                decimals: 24,
+            },
+            TokenData {
+                amount: U128(2_000_000),
+                decimals: 6,
+            },
+        );
+        let expected_res = TokenData {
+            amount: U128(2_500_000_000_000_000_000_000_000),
+            decimals: 24,
+        };
+        assert_eq!(res.amount, expected_res.amount);
+        assert_eq!(res.decimals, 24);
+    }
+
+    #[test]
+    fn test_divide_token_different_decimals_smaller() {
+        let (_, contract) = setup_contract();
+        let res = contract.divide_token(
+            TokenData {
+                amount: U128(5_000_000),
+                decimals: 6,
+            },
+            TokenData {
+                amount: U128(2_000_000_000_000_000_000_000_000),
+                decimals: 24,
+            },
+        );
+        let expected_res = TokenData {
+            amount: U128(2_500_000),
+            decimals: 24,
+        };
+        assert_eq!(res.amount, expected_res.amount);
+        assert_eq!(res.decimals, 6);
+    }
+
+    #[test]
+    fn test_get_1_percent() {
+        let (_, contract) = setup_contract();
+        let res = contract.percent(U128(2_000_000_000_000_000_000_000_000), 100);
+        let expected_res = U128(20_000_000_000_000_000_000_000);
+        assert_eq!(res.0, expected_res.0);
     }
 }
