@@ -1,5 +1,11 @@
 // Find all our documentation at https://docs.near.org
-use near_sdk::{log, near, near_bindgen, PanicOnDefault};
+use near_sdk::{json_types::U128, log, near, near_bindgen, PanicOnDefault};
+
+#[near(serializers = [json, borsh])]
+pub struct BasicReturnObject {
+    pub greeting: String,
+    pub number: u8,
+}
 
 // Define the contract structure
 #[near(contract_state)]
