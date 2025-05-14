@@ -3,27 +3,12 @@ use near_sdk::{
     assert_one_yocto, env, json_types::U128, log, near, near_bindgen, require, AccountId,
     PanicOnDefault,
 };
-use uint::construct_uint;
+use structs::{basic_return_object::BasicReturnObject, token_data::TokenData};
+use utils::proportional;
 
-construct_uint! {
-    /// 256-bit unsigned integer.
-    pub struct U256(4);
-}
-
-#[near(serializers = [json, borsh])]
-pub struct BasicReturnObject {
-    pub greeting: String,
-    pub number: u8,
-}
-#[near(serializers = [json, borsh])]
-pub struct TokenData {
-    pub amount: U128,
-    pub decimals: u8,
-}
-
-pub(crate) fn proportional(amount: u128, numerator: u128, denominator: u128) -> u128 {
-    (U256::from(amount) * U256::from(numerator) / U256::from(denominator)).as_u128()
-}
+mod internal;
+mod structs;
+mod utils;
 
 // Define the contract structure
 #[near(contract_state)]
@@ -58,13 +43,6 @@ impl NearTutorialContract {
         env::state_write(&new_state);
 
         new_state
-    }
-
-    // This function is used to check if the caller is the owner of the contract
-    // Currently, the owner is hardcoded to "near-tuto-1.testnet"
-    // In the future, we will use a better way to manage the owner
-    fn assert_owner(&self) {
-        require!(env::predecessor_account_id() == self.owner, "Not the owner");
     }
 
     // Public method - returns the greeting saved, defaulting to DEFAULT_GREETING
