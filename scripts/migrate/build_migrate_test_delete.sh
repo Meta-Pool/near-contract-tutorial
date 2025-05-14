@@ -15,7 +15,7 @@ try_migrate_and_test() {
     echo "El contrato fue migrado correctamente."
 
     echo "Testeando el contrato..."
-    ./scripts/test.sh $CONTRACT_ID $OWNER $NEW_OWNER $NON_OWNER_ACCOUNT_ID
+    ./scripts/test.sh $CONTRACT_ID $OWNER $NEW_OWNER $BENEFICIARY_ACCOUNT_ID $NON_OWNER_ACCOUNT_ID
     echo "El contrato fue testeado correctamente."
 }
 

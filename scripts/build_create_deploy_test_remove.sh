@@ -1,11 +1,11 @@
 if [ "$#" -ne 5 ]; then
-    echo "Se requieren 5 parámetros: el nombre de la cuenta a crear, el saludo inicial del contrato, el saludo a editar, la cuenta del beneficiario cuando se elimine la cuenta y una cuenta para testear que no sea de owner"
+    echo "Se requieren 5 parámetros: el nombre de la cuenta a crear, el owner inicial del contrato, el owner a editar, la cuenta del beneficiario cuando se elimine la cuenta y una cuenta para testear que no sea de owner"
     exit 1
 fi
 
 ACCOUNT_ID=$1
-GREETING=$2
-NEW_GREETING=$3
+OWNER=$2
+NEW_OWNER=$3
 BENEFICIARY_ACCOUNT_ID=$4
 NON_OWNER_ACCOUNT_ID=$5
 
@@ -55,31 +55,32 @@ try_set_greeting_with_wrong_account() {
 
     echo "Testeando set_greeting con una cuenta que no es owner..."
     set +e
-    ./scripts/set_greeting.sh $ACCOUNT_ID "$NEW_GREETING" $NON_OWNER_ACCOUNT_ID
+    ./scripts/set_greeting.sh $ACCOUNT_ID "$NEW_OWNER" $NON_OWNER_ACCOUNT_ID
     set -e
     echo "Testando nuevamente el saludo..."
-    ./scripts/test_greeting.sh $ACCOUNT_ID "$NEW_GREETING"
+    ./scripts/test_greeting.sh $ACCOUNT_ID "$NEW_OWNER"
     echo "El saludo sigue siendo siendo el mismo"
 }
 
 try_deploy_and_test() {
     set -e
     echo "Deployando el contrato..."
-    ./scripts/deploy.sh $ACCOUNT_ID "$GREETING"
-    echo "Testando el saludo..."
-    ./scripts/test_greeting.sh $ACCOUNT_ID "$GREETING"
-    echo "El saludo es correcto"
-    echo "Seteando el saludo..."
-    ./scripts/set_greeting.sh $ACCOUNT_ID "$NEW_GREETING" $ACCOUNT_ID
-    echo "Testando nuevamente el saludo..."
-    ./scripts/test_greeting.sh $ACCOUNT_ID "$NEW_GREETING"
-    echo "El saludo sigue siendo correcto"
+    ./scripts/deploy.sh $ACCOUNT_ID "$OWNER"
+    # echo "Testando el saludo..."
+    # ./scripts/test_greeting.sh $ACCOUNT_ID "$OWNER"
+    # echo "El saludo es correcto"
+    # echo "Seteando el saludo..."
+    # ./scripts/set_greeting.sh $ACCOUNT_ID "$NEW_OWNER" $ACCOUNT_ID
+    # echo "Testando nuevamente el saludo..."
+    # ./scripts/test_greeting.sh $ACCOUNT_ID "$NEW_OWNER"
+    # echo "El saludo sigue siendo correcto"
 
-    test_types
+    ./scripts/test.sh $ACCOUNT_ID "$OWNER" "$NEW_OWNER" $BENEFICIARY_ACCOUNT_ID $NON_OWNER_ACCOUNT_ID
+    # test_types
 
-    ./scripts/log/log.sh $ACCOUNT_ID
+    # ./scripts/log/log.sh $ACCOUNT_ID
 
-    try_set_greeting_with_wrong_account
+    # try_set_greeting_with_wrong_account
 }
 
 catch() {
@@ -117,7 +118,7 @@ create_account() {
     echo "Cuenta creada correctamente."
 }
 
-echo "Corriendo con parámetros $ACCOUNT_ID, $GREETING, $NEW_GREETING y $BENEFICIARY_ACCOUNT_ID"
+echo "Corriendo con parámetros $ACCOUNT_ID, $OWNER, $NEW_OWNER y $BENEFICIARY_ACCOUNT_ID"
 
 echo "Buildeando el contrato..."
 ./scripts/build.sh

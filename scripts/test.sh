@@ -1,12 +1,13 @@
-if [ "$#" -ne 4 ]; then
-    echo "Se requieren 4 parámetros: el nombre del contrato a testear, el owner actual esperado, el nuevo owner a poner y una cuenta para testear que no sea de owner"
+if [ "$#" -ne 5 ]; then
+    echo "Se requieren 5 parámetros: el nombre del contrato a testear, el owner actual esperado, el nuevo owner a poner, el beneficiario para eliminar una cuenta y una cuenta para testear que no sea de owner"
     exit 1
 fi
 
 CONTRACT_ID=$1
 OWNER=$2
 NEW_OWNER=$3
-NON_OWNER_ACCOUNT_ID=$4
+BENEFICIARY_ACCOUNT_ID=$4
+NON_OWNER_ACCOUNT_ID=$5
 
 test_types() {
     echo "Testeando u8..."
@@ -49,15 +50,15 @@ test_types() {
 try_set_greeting_with_wrong_account() {
     echo "Creando una cuenta para testear que llamar al saludo falla"
     create_account $NON_OWNER_ACCOUNT_ID
-    trap remove_account EXIT
+    trap remove_accounts EXIT
 
-    echo "Testeando set_greeting con una cuenta que no es owner..."
+    echo "Testeando set_owner con una cuenta que no es owner..."
     set +e
     ./scripts/set_owner.sh $CONTRACT_ID "$NEW_OWNER" $NON_OWNER_ACCOUNT_ID
     set -e
-    echo "Testando nuevamente el saludo..."
+    echo "Testando nuevamente el owner..."
     ./scripts/test_owner.sh $CONTRACT_ID "$NEW_OWNER"
-    echo "El saludo sigue siendo siendo el mismo"
+    echo "El owner sigue siendo siendo el mismo"
 }
 
 remove_account() {
