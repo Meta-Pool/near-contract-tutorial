@@ -1,20 +1,9 @@
 // Find all our documentation at https://docs.near.org
-use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
-use near_sdk::json_types::U128;
-use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{log, near_bindgen, PanicOnDefault};
-use schemars::JsonSchema;
-
-#[derive(Deserialize, Serialize, JsonSchema)]
-#[serde(crate = "near_sdk::serde")]
-pub struct BasicReturnObject {
-    pub greeting: String,
-    pub number: u8,
-}
+use near_sdk::{log, near, near_bindgen, PanicOnDefault};
 
 // Define the contract structure
-#[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
+#[near(contract_state)]
+#[derive(PanicOnDefault)]
 pub struct NearTutorialContract {
     greeting: String,
 }
