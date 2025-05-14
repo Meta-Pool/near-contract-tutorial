@@ -1,11 +1,5 @@
 // Find all our documentation at https://docs.near.org
-use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
-use near_sdk::json_types::U128;
-use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{
-    assert_one_yocto, env, log, near, near_bindgen, require, AccountId, PanicOnDefault,
-};
-use schemars::JsonSchema;
+use near_sdk::{assert_one_yocto, json_types::U128, log, near, near_bindgen, require, AccountId, PanicOnDefault};
 use uint::construct_uint;
 
 construct_uint! {
@@ -13,8 +7,7 @@ construct_uint! {
     pub struct U256(4);
 }
 
-#[derive(Deserialize, Serialize, JsonSchema)]
-#[serde(crate = "near_sdk::serde")]
+#[near(serializers = [json, borsh])]
 pub struct BasicReturnObject {
     pub greeting: String,
     pub number: u8,
@@ -30,8 +23,8 @@ pub(crate) fn proportional(amount: u128, numerator: u128, denominator: u128) -> 
 }
 
 // Define the contract structure
-#[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
+#[near(contract_state)]
+#[derive(PanicOnDefault)]
 pub struct NearTutorialContract {
     greeting: String,
 }
