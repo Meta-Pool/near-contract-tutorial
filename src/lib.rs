@@ -1,10 +1,9 @@
 // Find all our documentation at https://docs.near.org
-use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
-use near_sdk::{log, near_bindgen, PanicOnDefault};
+use near_sdk::{log, near, near_bindgen, PanicOnDefault};
 
 // Define the contract structure
-#[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
+#[near(contract_state)]
+#[derive(PanicOnDefault)]
 pub struct NearTutorialContract {
     greeting: String,
 }
