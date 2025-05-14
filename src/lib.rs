@@ -1,5 +1,8 @@
 // Find all our documentation at https://docs.near.org
-use near_sdk::{assert_one_yocto, json_types::U128, log, near, near_bindgen, require, AccountId, PanicOnDefault};
+use near_sdk::{
+    assert_one_yocto, env, json_types::U128, log, near, near_bindgen, require, AccountId,
+    PanicOnDefault,
+};
 use uint::construct_uint;
 
 construct_uint! {
@@ -148,10 +151,7 @@ impl NearTutorialContract {
  */
 #[cfg(test)]
 mod tests {
-    use near_sdk::{
-        test_utils::{accounts, VMContextBuilder},
-        testing_env, NearToken,
-    };
+    use near_sdk::{test_utils::VMContextBuilder, testing_env, NearToken};
 
     use super::*;
 
