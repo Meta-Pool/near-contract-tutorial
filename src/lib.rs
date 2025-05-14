@@ -29,6 +29,11 @@ pub(crate) fn proportional(amount: u128, numerator: u128, denominator: u128) -> 
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
 pub struct NearTutorialContract {
+    owner: AccountId,
+}
+
+#[near(serializers = [json, borsh])]
+pub struct OldNearTutorialContract {
     greeting: String,
 }
 
@@ -36,35 +41,44 @@ pub struct NearTutorialContract {
 #[near_bindgen]
 impl NearTutorialContract {
     #[init]
-    pub fn new(initial_greeting: String) -> Self {
+    pub fn new(initial_owner: AccountId) -> Self {
+        assert!(!env::state_exists(), "Already initialized");
         Self {
-            greeting: initial_greeting,
+            owner: initial_owner,
         }
+    }
+
+    #[init(ignore_state)]
+    pub fn migrate(new_owner: AccountId) -> Self {
+        // We will not be using the old state, but normally we would need to migrate everything that is relevante to the new state
+        let _old_state: OldNearTutorialContract = env::state_read().expect("Failed to read state");
+
+        let new_state = Self { owner: new_owner };
+
+        env::state_write(&new_state);
+
+        new_state
     }
 
     // This function is used to check if the caller is the owner of the contract
     // Currently, the owner is hardcoded to "near-tuto-1.testnet"
     // In the future, we will use a better way to manage the owner
     fn assert_owner(&self) {
-        require!(
-            env::predecessor_account_id()
-                == AccountId::from("near-tuto-1.testnet".parse::<AccountId>().unwrap()),
-            "Not the owner"
-        );
+        require!(env::predecessor_account_id() == self.owner, "Not the owner");
     }
 
     // Public method - returns the greeting saved, defaulting to DEFAULT_GREETING
-    pub fn get_greeting(&self) -> String {
-        self.greeting.clone()
+    pub fn get_owner(&self) -> AccountId {
+        self.owner.clone()
     }
 
     // Public method - accepts a greeting, such as "howdy", and records it
     #[payable]
-    pub fn set_greeting(&mut self, greeting: String) {
+    pub fn set_owner(&mut self, owner: AccountId) {
         assert_one_yocto();
         self.assert_owner();
-        log!("Saving greeting: {greeting}");
-        self.greeting = greeting;
+        log!("Saving new owner: {owner}");
+        self.owner = owner;
     }
 
     pub fn return_u8(&self) -> u8 {
@@ -83,11 +97,12 @@ impl NearTutorialContract {
         U128(42_000_000_000_000_000_000_000_000_000_000)
     }
 
-    pub fn return_str_ref(&self) -> &str {
-        // this will return a reference to the string, but it will be dropped after the function ends
-        // so it will not be usable outside of this function
-        &self.greeting
-    }
+    // This function is commented out since we can't return a reference to a string with a dynamically generated value
+    // pub fn return_str_ref(&self) -> &str {
+    //     // this will return a reference to the string, but it will be dropped after the function ends
+    //     // so it will not be usable outside of this function
+    //     &self.owner.clone().to_string()
+    // }
 
     pub fn return_bool(&self) -> bool {
         // this will return a copy of the string, so it will be usable outside of this function
@@ -97,7 +112,7 @@ impl NearTutorialContract {
     pub fn return_obj(&self) -> BasicReturnObject {
         // this will return a copy of the string, so it will be usable outside of this function
         BasicReturnObject {
-            greeting: self.greeting.clone(),
+            greeting: self.owner.to_string(),
             number: 42,
         }
     }
@@ -141,7 +156,7 @@ impl NearTutorialContract {
     }
 
     pub fn log(&self) {
-        log!("Greeting: {}", self.greeting);
+        log!("Owner: {}", self.owner.to_string());
     }
 }
 
@@ -151,13 +166,17 @@ impl NearTutorialContract {
  */
 #[cfg(test)]
 mod tests {
-    use near_sdk::{test_utils::VMContextBuilder, testing_env, NearToken};
+    use near_sdk::{
+        test_utils::{accounts, VMContextBuilder},
+        testing_env, NearToken,
+    };
 
     use super::*;
 
     fn setup_contract() -> (VMContextBuilder, NearTutorialContract) {
         let context = VMContextBuilder::new();
-        let contract = NearTutorialContract::new("Hello".to_string());
+        let owner = accounts(0);
+        let contract = NearTutorialContract::new(owner);
         (context, contract)
     }
 
@@ -165,29 +184,33 @@ mod tests {
     fn get_default_greeting() {
         let (_, contract) = setup_contract();
         // this test did not call set_greeting so should return the default "Hello" greeting
-        assert_eq!(contract.get_greeting(), "Hello");
+        let expected_owner = accounts(0);
+        assert_eq!(contract.get_owner(), expected_owner);
     }
 
     #[test]
     fn set_then_get_greeting() {
         let (mut ctx, mut contract) = setup_contract();
-        ctx.predecessor_account_id("near-tuto-1.testnet".parse::<AccountId>().unwrap())
+        ctx.predecessor_account_id(accounts(0))
             .attached_deposit(NearToken::from_yoctonear(1));
         testing_env!(ctx.build());
 
-        contract.set_greeting("howdy".to_string());
-        assert_eq!(contract.get_greeting(), "howdy");
+        let new_owner = accounts(1);
+        contract.set_owner(new_owner.clone());
+        assert_eq!(contract.get_owner(), new_owner);
     }
 
     #[test]
     #[should_panic(expected = "Requires attached deposit of exactly 1 yoctoNEAR")]
     fn set_greeting_should_panic() {
         let (mut ctx, mut contract) = setup_contract();
-        ctx.predecessor_account_id("near-tuto-1.testnet".parse::<AccountId>().unwrap());
+        let owner = accounts(0);
+        ctx.predecessor_account_id(owner.clone());
         testing_env!(ctx.build());
 
-        contract.set_greeting("howdy".to_string());
-        assert_eq!(contract.get_greeting(), "howdy");
+        let new_failed_owner = accounts(1);
+        contract.set_owner(new_failed_owner);
+        assert_eq!(contract.get_owner(), owner);
     }
 
     #[test]
@@ -214,11 +237,11 @@ mod tests {
         );
     }
 
-    #[test]
-    fn get_str_ref() {
-        let (_, contract) = setup_contract();
-        assert_eq!(contract.return_str_ref(), &"Hello".to_string());
-    }
+    // #[test]
+    // fn get_str_ref() {
+    //     let (_, contract) = setup_contract();
+    //     assert_eq!(contract.return_str_ref(), &"Hello".to_string());
+    // }
 
     #[test]
     fn get_bool() {
