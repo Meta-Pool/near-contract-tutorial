@@ -166,14 +166,12 @@ mod tests {
     #[test]
     fn get_u8() {
         let (_, contract) = setup_contract();
-        // this test did not call set_greeting so should return the default "Hello" greeting
         assert_eq!(contract.return_u8(), 42);
     }
 
     #[test]
     fn get_u128_badly() {
         let (_, contract) = setup_contract();
-        // this test did not call set_greeting so should return the default "Hello" greeting
         assert_eq!(
             contract.return_u128_badly(),
             42_000_000_000_000_000_000_000_000_000_000
@@ -183,7 +181,6 @@ mod tests {
     #[test]
     fn get_u128() {
         let (_, contract) = setup_contract();
-        // this test did not call set_greeting so should return the default "Hello" greeting
         assert_eq!(
             contract.return_u128(),
             U128(42_000_000_000_000_000_000_000_000_000_000)
@@ -193,21 +190,18 @@ mod tests {
     #[test]
     fn get_str_ref() {
         let (_, contract) = setup_contract();
-        // this test did not call set_greeting so should return the default "Hello" greeting
         assert_eq!(contract.return_str_ref(), &"Hello".to_string());
     }
 
     #[test]
     fn get_bool() {
         let (_, contract) = setup_contract();
-        // this test did not call set_greeting so should return the default "Hello" greeting
         assert_eq!(contract.return_bool(), true);
     }
 
     #[test]
     fn get_obj() {
         let (_, contract) = setup_contract();
-        // this test did not call set_greeting so should return the default "Hello" greeting
         let obj = contract.return_obj();
         assert_eq!(obj.greeting, "Hello");
         assert_eq!(obj.number, 42);
@@ -216,7 +210,6 @@ mod tests {
     #[test]
     fn get_vec() {
         let (_, contract) = setup_contract();
-        // this test did not call set_greeting so should return the default "Hello" greeting
         let vec = contract.return_vec(1, 10);
         let expected = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         assert_eq!(vec, expected);
@@ -225,7 +218,6 @@ mod tests {
     #[test]
     fn get_option_none() {
         let (_, contract) = setup_contract();
-        // this test did not call set_greeting so should return the default "Hello" greeting
         let vec = contract.return_option_none();
         assert_eq!(vec.is_none(), true);
     }
@@ -233,7 +225,6 @@ mod tests {
     #[test]
     fn get_option_some() {
         let (_, contract) = setup_contract();
-        // this test did not call set_greeting so should return the default "Hello" greeting
         let vec = contract.return_option_some();
         assert_eq!(vec.unwrap(), 42);
     }
