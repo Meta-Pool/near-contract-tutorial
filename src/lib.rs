@@ -29,6 +29,11 @@ pub(crate) fn proportional(amount: u128, numerator: u128, denominator: u128) -> 
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
 pub struct NearTutorialContract {
+    owner: String,
+}
+
+#[near(serializers = [json, borsh])]
+pub struct OldNearTutorialContract {
     greeting: String,
 }
 
@@ -36,10 +41,23 @@ pub struct NearTutorialContract {
 #[near_bindgen]
 impl NearTutorialContract {
     #[init]
-    pub fn new(initial_greeting: String) -> Self {
+    pub fn new(initial_owner: String) -> Self {
+        assert!(!env::state_exists(), "Already initialized");
         Self {
-            greeting: initial_greeting,
+            owner: initial_owner,
         }
+    }
+
+    #[init(ignore_state)]
+    pub fn migrate(new_owner: String) -> Self {
+        // We will not be using the old state, but normally we would need to migrate everything that is relevante to the new state
+        let _old_state: OldNearTutorialContract = env::state_read().expect("Failed to read state");
+
+        let new_state = Self { owner: new_owner };
+
+        env::state_write(&new_state);
+
+        new_state
     }
 
     // This function is used to check if the caller is the owner of the contract
