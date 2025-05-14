@@ -2,7 +2,9 @@
 use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{log, near, near_bindgen, require, PanicOnDefault};
+use near_sdk::{
+    assert_one_yocto, env, log, near, near_bindgen, require, AccountId, PanicOnDefault,
+};
 use schemars::JsonSchema;
 use uint::construct_uint;
 
@@ -44,13 +46,27 @@ impl NearTutorialContract {
         }
     }
 
+    // This function is used to check if the caller is the owner of the contract
+    // Currently, the owner is hardcoded to "near-tuto.testnet"
+    // In the future, we will use a better way to manage the owner
+    fn assert_owner(&self) {
+        require!(
+            env::predecessor_account_id()
+                == AccountId::from("near-tuto.testnet".parse::<AccountId>().unwrap()),
+            "Not the owner"
+        );
+    }
+
     // Public method - returns the greeting saved, defaulting to DEFAULT_GREETING
     pub fn get_greeting(&self) -> String {
         self.greeting.clone()
     }
 
     // Public method - accepts a greeting, such as "howdy", and records it
+    #[payable]
     pub fn set_greeting(&mut self, greeting: String) {
+        assert_one_yocto();
+        self.assert_owner();
         log!("Saving greeting: {greeting}");
         self.greeting = greeting;
     }
@@ -139,7 +155,10 @@ impl NearTutorialContract {
  */
 #[cfg(test)]
 mod tests {
-    use near_sdk::test_utils::VMContextBuilder;
+    use near_sdk::{
+        test_utils::{accounts, VMContextBuilder},
+        testing_env, NearToken,
+    };
 
     use super::*;
 
@@ -158,7 +177,22 @@ mod tests {
 
     #[test]
     fn set_then_get_greeting() {
-        let (_, mut contract) = setup_contract();
+        let (mut ctx, mut contract) = setup_contract();
+        ctx.predecessor_account_id("near-tuto.testnet".parse::<AccountId>().unwrap())
+            .attached_deposit(NearToken::from_yoctonear(1));
+        testing_env!(ctx.build());
+
+        contract.set_greeting("howdy".to_string());
+        assert_eq!(contract.get_greeting(), "howdy");
+    }
+
+    #[test]
+    #[should_panic(expected = "Requires attached deposit of exactly 1 yoctoNEAR")]
+    fn set_greeting_should_panic() {
+        let (mut ctx, mut contract) = setup_contract();
+        ctx.predecessor_account_id("near-tuto.testnet".parse::<AccountId>().unwrap());
+        testing_env!(ctx.build());
+
         contract.set_greeting("howdy".to_string());
         assert_eq!(contract.get_greeting(), "howdy");
     }

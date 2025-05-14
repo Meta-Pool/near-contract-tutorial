@@ -1,5 +1,5 @@
-if [ "$#" -ne 4 ]; then
-    echo "Se requieren 4 parámetros: el nombre de la cuenta a crear, el saludo inicial del contrato, el saludo a editar y la cuenta del beneficiario cuando se elimine la cuenta"
+if [ "$#" -ne 5 ]; then
+    echo "Se requieren 5 parámetros: el nombre de la cuenta a crear, el saludo inicial del contrato, el saludo a editar, la cuenta del beneficiario cuando se elimine la cuenta y una cuenta para testear que no sea de owner"
     exit 1
 fi
 
@@ -7,6 +7,9 @@ ACCOUNT_ID=$1
 GREETING=$2
 NEW_GREETING=$3
 BENEFICIARY_ACCOUNT_ID=$4
+NON_OWNER_ACCOUNT_ID=$5
+
+CREATED_ACCOUNT_IDS=()
 
 test_types() {
     echo "Testeando u8..."
@@ -46,6 +49,19 @@ test_types() {
     echo "El option_some es correcto"
 }
 
+try_set_greeting_with_wrong_account() {
+    echo "Creando una cuenta para testear que llamar al saludo falla"
+    create_account $NON_OWNER_ACCOUNT_ID
+
+    echo "Testeando set_greeting con una cuenta que no es owner..."
+    set +e
+    ./scripts/set_greeting.sh $ACCOUNT_ID "$NEW_GREETING" $NON_OWNER_ACCOUNT_ID
+    set -e
+    echo "Testando nuevamente el saludo..."
+    ./scripts/test_greeting.sh $ACCOUNT_ID "$NEW_GREETING"
+    echo "El saludo sigue siendo siendo el mismo"
+}
+
 try_deploy_and_test() {
     set -e
     echo "Deployando el contrato..."
@@ -54,7 +70,7 @@ try_deploy_and_test() {
     ./scripts/test_greeting.sh $ACCOUNT_ID "$GREETING"
     echo "El saludo es correcto"
     echo "Seteando el saludo..."
-    ./scripts/set_greeting.sh $ACCOUNT_ID "$NEW_GREETING"
+    ./scripts/set_greeting.sh $ACCOUNT_ID "$NEW_GREETING" $ACCOUNT_ID
     echo "Testando nuevamente el saludo..."
     ./scripts/test_greeting.sh $ACCOUNT_ID "$NEW_GREETING"
     echo "El saludo sigue siendo correcto"
@@ -63,6 +79,7 @@ try_deploy_and_test() {
 
     ./scripts/log/log.sh $ACCOUNT_ID
 
+    try_set_greeting_with_wrong_account
 }
 
 catch() {
@@ -75,10 +92,29 @@ catch() {
     return 0
 }
 
-remove_account() {
-    echo "Eliminando la cuenta..."
-    ./scripts/remove_account.sh $ACCOUNT_ID $BENEFICIARY_ACCOUNT_ID
-    echo "Cuenta eliminada correctamente."
+remove_accounts() {
+    ACCOUNT_ID_TO_REMOVE=$1
+    echo "Eliminando las cuentas creadas..."
+    if [[ ${#created_accounts[@]} -eq 0 ]]; then
+        echo "No hay cuentas que eliminar"
+        return
+    fi
+    for account_id in "${created_accounts[@]}"; do
+        if [[ -n "$account_id" ]]; then
+            echo "Eliminando la cuenta con ID: $account_id"
+            ./scripts/remove_account.sh $account_id $BENEFICIARY_ACCOUNT_ID
+            echo "Cuenta eliminada correctamente."
+        fi
+    done
+    echo "Todas las cuentas han sido eliminadas."
+}
+
+create_account() {
+    local account_id=$1
+    echo "Creando cuenta con ID: $account_id"
+    ./scripts/create_account.sh $account_id
+    created_accounts+=("$account_id")
+    echo "Cuenta creada correctamente."
 }
 
 echo "Corriendo con parámetros $ACCOUNT_ID, $GREETING, $NEW_GREETING y $BENEFICIARY_ACCOUNT_ID"
@@ -86,10 +122,10 @@ echo "Corriendo con parámetros $ACCOUNT_ID, $GREETING, $NEW_GREETING y $BENEFIC
 echo "Buildeando el contrato..."
 ./scripts/build.sh
 echo "Creando la cuenta..."
-./scripts/create_account.sh $ACCOUNT_ID
+create_account $ACCOUNT_ID
 
 trap catch ERR
-trap remove_account EXIT
+trap remove_accounts EXIT
 try_deploy_and_test
 
 
