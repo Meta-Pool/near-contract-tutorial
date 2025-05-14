@@ -43,12 +43,12 @@ impl NearTutorialContract {
     }
 
     // This function is used to check if the caller is the owner of the contract
-    // Currently, the owner is hardcoded to "near-tuto.testnet"
+    // Currently, the owner is hardcoded to "near-tuto-1.testnet"
     // In the future, we will use a better way to manage the owner
     fn assert_owner(&self) {
         require!(
             env::predecessor_account_id()
-                == AccountId::from("near-tuto.testnet".parse::<AccountId>().unwrap()),
+                == AccountId::from("near-tuto-1.testnet".parse::<AccountId>().unwrap()),
             "Not the owner"
         );
     }
@@ -171,7 +171,7 @@ mod tests {
     #[test]
     fn set_then_get_greeting() {
         let (mut ctx, mut contract) = setup_contract();
-        ctx.predecessor_account_id("near-tuto.testnet".parse::<AccountId>().unwrap())
+        ctx.predecessor_account_id("near-tuto-1.testnet".parse::<AccountId>().unwrap())
             .attached_deposit(NearToken::from_yoctonear(1));
         testing_env!(ctx.build());
 
@@ -183,7 +183,7 @@ mod tests {
     #[should_panic(expected = "Requires attached deposit of exactly 1 yoctoNEAR")]
     fn set_greeting_should_panic() {
         let (mut ctx, mut contract) = setup_contract();
-        ctx.predecessor_account_id("near-tuto.testnet".parse::<AccountId>().unwrap());
+        ctx.predecessor_account_id("near-tuto-1.testnet".parse::<AccountId>().unwrap());
         testing_env!(ctx.build());
 
         contract.set_greeting("howdy".to_string());
