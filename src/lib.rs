@@ -231,7 +231,7 @@ mod tests {
     fn get_obj() {
         let (_, contract) = setup_contract();
         let obj = contract.return_obj();
-        assert_eq!(obj.greeting, "Hello");
+        assert_eq!(obj.greeting, accounts(0).to_string());
         assert_eq!(obj.number, 42);
     }
 
