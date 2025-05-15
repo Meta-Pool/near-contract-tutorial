@@ -1911,10 +1911,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "near-contract-standards"
+version = "5.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d38e17b67f8d00855ecc596e031181780ebdb20f784d916746baac66daa78606"
+dependencies = [
+ "near-sdk",
+]
+
+[[package]]
 name = "near-contract-tutorial"
 version = "0.1.0"
 dependencies = [
  "borsh",
+ "near-contract-standards",
  "near-sdk",
  "near-workspaces",
  "schemars",

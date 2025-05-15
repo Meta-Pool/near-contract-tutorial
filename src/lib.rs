@@ -6,6 +6,7 @@ use near_sdk::{
 use structs::{basic_return_object::BasicReturnObject, token_data::TokenData};
 use utils::proportional;
 
+mod deposit;
 mod internal;
 mod structs;
 mod utils;
